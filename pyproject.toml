@@ -1,0 +1,105 @@
+[project]
+name = "reeftwin"
+version = "0.1.0"
+description = "Real-time digital twin platform for coral reef ecosystems"
+requires-python = ">=3.11"
+dependencies = [
+  "fastapi>=0.115.0",
+  "uvicorn[standard]>=0.30.0",
+  "pydantic>=2.8.0",
+  "pydantic-settings>=2.4.0",
+  "pandas>=2.2.0",
+  "polars>=1.5.0",
+  "numpy>=1.26.0",
+  "scikit-learn>=1.5.0",
+  "joblib>=1.4.0",
+  "sqlalchemy>=2.0.0",
+  "prometheus-client>=0.20.0",
+  "python-dotenv>=1.0.0",
+  "pyyaml>=6.0.0",
+  "pyarrow>=18.0.0",
+  "typer>=0.12.0"
+]
+
+[project.optional-dependencies]
+genai = [
+  "anthropic>=0.52.0",
+  "rank-bm25>=0.2.2",
+  "fastembed>=0.8.0",
+]
+mlops = [
+  "mlflow>=3.10.0",
+  "evidently>=0.7.0",
+]
+forecasting = [
+  "prophet>=1.1.0",
+]
+kfp = [
+  "kfp>=2.10.0",
+]
+streaming = [
+  "confluent-kafka>=2.6.0",
+  "fastavro>=1.9.0",
+]
+netcdf = [
+  "xarray>=2024.1.0",
+  "netCDF4>=1.7.0",
+  "scipy>=1.14.0",
+]
+geotiff = [
+  "rasterio>=1.4.0",
+  "rio-tiler>=7.0.0",
+]
+s3 = [
+  "boto3>=1.34.0",
+]
+dashboard = [
+  "streamlit>=1.35.0",
+  "plotly>=5.20.0",
+  "networkx>=3.3",
+]
+openai = [
+  "openai>=1.30.0",
+]
+qdrant = [
+  "qdrant-client>=1.9.0",
+]
+pgvector = [
+  "psycopg2-binary>=2.9.0",
+]
+milvus = [
+  "pymilvus>=2.4.0",
+]
+torch = [
+  "torch>=2.0.0",
+  "transformers>=4.40.0",
+]
+sagemaker = [
+  "sagemaker>=2.200.0",
+]
+dev = [
+  "pytest>=8.0.0",
+  "ruff>=0.6.0",
+  "mypy>=1.10.0",
+  "httpx>=0.27.0",
+]
+
+[tool.setuptools.packages.find]
+include = [
+  "infrastructure*",
+  "models*",
+  "pipelines*",
+  "services*",
+  "configs*",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+ignore = ["F821", "E402", "E701", "E702", "F401", "F841"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

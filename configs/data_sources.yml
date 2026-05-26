@@ -1,0 +1,10 @@
+data_sources:
+  noaa_coral_reef_watch:
+    description: NOAA Coral Reef Watch heat-stress products such as SST, HotSpot, Degree Heating Weeks, and bleaching alerts.
+    mode: sample_first_external_later
+  aims:
+    description: Australian Institute of Marine Science reef monitoring datasets.
+    mode: external_integration_placeholder
+  allen_coral_atlas:
+    description: Coral habitat and monitoring layers.
+    mode: external_integration_placeholder

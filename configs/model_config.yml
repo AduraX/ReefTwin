@@ -1,0 +1,18 @@
+bleaching_risk:
+  model_type: random_forest_classifier
+  features:
+    - water_temperature_c
+    - ph
+    - salinity_psu
+    - turbidity_ntu
+    - dissolved_oxygen_mg_l
+    - sst_anomaly_c
+    - hotspot_c
+    - degree_heating_weeks
+    - temperature_trend_7d
+  target: bleaching_label
+  thresholds:
+    normal: 0.25
+    watch: 0.50
+    warning: 0.70
+    alert: 0.85

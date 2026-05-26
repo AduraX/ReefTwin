@@ -1,0 +1,15 @@
+{
+  "type": "record",
+  "name": "IoTReading",
+  "namespace": "com.reeftwin.iot",
+  "doc": "Real-time IoT sensor reading from a reef monitoring station.",
+  "fields": [
+    {"name": "reef_id", "type": "string", "doc": "Reef identifier (e.g. gbr_heron_reef)"},
+    {"name": "timestamp", "type": "string", "doc": "ISO 8601 timestamp"},
+    {"name": "water_temperature_c", "type": "double", "doc": "Water temperature in Celsius"},
+    {"name": "ph", "type": "double", "doc": "pH level"},
+    {"name": "salinity_psu", "type": "double", "doc": "Salinity in PSU"},
+    {"name": "turbidity_ntu", "type": "double", "doc": "Turbidity in NTU"},
+    {"name": "dissolved_oxygen_mg_l", "type": "double", "doc": "Dissolved oxygen in mg/L"}
+  ]
+}

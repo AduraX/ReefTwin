@@ -1,0 +1,579 @@
+================== ReefTwin Enterprise Security Codex Prompts ===================
+
+============================================================================================
+
+1. Security baseline and threat model
+
+You are working in the Kubeflow4X repository.
+
+Create a security baseline for the project aligned with:
+- ASD Essential Eight principles
+- ASD ISM-style control thinking
+- OWASP API Security Top 10 2023
+- CIS Kubernetes Benchmark concepts
+- NIST AI RMF 1.0 principles
+
+Create:
+- docs/security/security_baseline.md
+- docs/security/threat_model.md
+- docs/security/risk_register.md
+
+The threat model must cover:
+- reef state API
+- simulation API
+- ingestion pipelines
+- Kafka/Redpanda topics
+- object storage
+- model artifacts
+- Kubernetes deployment
+- CI/CD supply chain
+
+Use STRIDE-style categories:
+- spoofing
+- tampering
+- repudiation
+- information disclosure
+- denial of service
+- privilege escalation
+
+Do not claim full compliance. Use the wording “security-aligned with”.
+
+============================================================================================
+2. API authentication with OIDC/JWT
+
+Implement enterprise-grade authentication for ReefTwin FastAPI services.
+
+Requirements:
+- Add OIDC/JWT authentication middleware
+- Support Keycloak-compatible JWT validation
+- Validate issuer, audience, expiry, and signature
+- Add environment variables:
+  - OIDC_ISSUER_URL
+  - OIDC_AUDIENCE
+  - OIDC_JWKS_URL
+- Add security dependencies in FastAPI
+- Protect all non-public endpoints by default
+- Leave GET /health and GET /ready public
+- Add tests for:
+  - missing token
+  - expired token
+  - invalid audience
+  - valid token
+
+Files to modify/create:
+- services/twin_api/security/auth.py
+- services/twin_api/main.py
+- tests/security/test_auth.py
+- docs/security/authentication.md
+
+
+
+============================================================================================
+3. Role-based access control
+
+Add RBAC authorization to ReefTwin.
+
+Create roles:
+- reef_admin
+- scientist
+- analyst
+- public_viewer
+
+Permissions:
+- reef_admin: full access
+- scientist: upload datasets, run simulations, view all reef states
+- analyst: view reef states and dashboards, cannot upload or mutate data
+- public_viewer: read-only access to public reef summaries
+
+Implement:
+- role extraction from JWT claims
+- permission decorators/dependencies
+- object-level authorization for reef_id
+- deny-by-default access control
+
+Protect endpoints:
+- POST /simulate requires scientist or reef_admin
+- POST /datasets/upload requires scientist or reef_admin
+- GET /reefs/{reef_id}/state requires object-level permission
+- GET /public/reefs requires public access
+
+Add tests for privilege escalation and object-level access bypass.
+
+
+============================================================================================
+4. API input validation and abuse protection
+
+
+Harden ReefTwin APIs against OWASP API risks.
+
+Implement:
+- strict Pydantic request schemas
+- max payload size protection
+- pagination limits
+- request rate limiting
+- simulation parameter bounds
+- rejection of unknown fields
+- structured validation errors
+- API audit logging for rejected requests
+
+Add rate limits:
+- public endpoints: 60 requests/minute
+- authenticated endpoints: 300 requests/minute
+- simulation endpoint: 20 requests/minute
+
+Add tests for:
+- oversized payload
+- invalid simulation values
+- excessive pagination limit
+- repeated requests triggering rate limit
+
+Files:
+- services/twin_api/security/rate_limit.py
+- services/twin_api/schemas.py
+- tests/security/test_api_abuse.py
+- docs/security/api_security.md
+
+
+============================================================================================
+5. Secure secrets management
+
+Remove all hardcoded secrets from ReefTwin.
+
+Implement:
+- environment-based configuration using pydantic-settings
+- no secrets in docker-compose defaults
+- .env.example with placeholder values only
+- support for AWS Secrets Manager-style secret injection
+- support for Kubernetes External Secrets
+
+Create:
+- services/common/config.py
+- infra/k8s/external-secrets/
+- docs/security/secrets_management.md
+
+Add pre-commit secret scanning configuration using gitleaks.
+
+Add CI job:
+- fail build if secrets are detected
+
+
+============================================================================================
+6. Data classification and secure data zones
+
+Implement a data classification model for ReefTwin.
+
+Create data zones:
+- bronze_raw_restricted
+- silver_validated_internal
+- gold_features_restricted
+- public_summaries
+
+Create metadata tags:
+- public
+- internal
+- restricted
+- sensitive_location
+
+Implement:
+- data classification config
+- validation that restricted data cannot be exported to public paths
+- tests preventing sensitive reef location fields from appearing in public API responses
+
+Create:
+- configs/data_classification.yml
+- services/common/data_classification.py
+- tests/security/test_data_classification.py
+- docs/security/data_governance.md
+
+
+============================================================================================
+7. Secure ingestion and SSRF protection
+
+
+Harden ReefTwin external data ingestion.
+
+Requirements:
+- allowlist approved data source domains only
+- block private IP ranges
+- block localhost and metadata service access
+- enforce HTTPS for external URLs
+- add request timeout
+- limit download size
+- checksum downloaded files where configured
+- quarantine invalid files
+
+Approved domains should be configurable in:
+- configs/data_sources.yml
+
+Add tests for:
+- localhost URL blocked
+- 169.254.169.254 blocked
+- private IP blocked
+- non-HTTPS URL blocked
+- unapproved domain blocked
+
+Create:
+- pipelines/security/safe_fetch.py
+- tests/security/test_safe_fetch.py
+- docs/security/ingestion_security.md
+
+
+============================================================================================
+8. Database security and audit logging
+
+Harden ReefTwin database access.
+
+Implement:
+- least-privilege database roles:
+  - app_read
+  - app_write
+  - migration_admin
+- SQLAlchemy connection config with SSL support
+- audit table for privileged actions
+- audit events for:
+  - dataset upload
+  - simulation run
+  - model promotion
+  - reef state override
+  - user role denied/access granted
+
+Create database migrations for:
+- audit_log table
+- role-safe tables if needed
+
+Add tests:
+- audit log created for simulation
+- denied access is logged
+- read-only role cannot write
+
+Create:
+- migrations/
+- services/common/audit.py
+- docs/security/database_security.md
+
+============================================================================================
+9. Kubernetes security hardening
+
+Create production-grade Kubernetes manifests for ReefTwin.
+
+Requirements:
+- separate namespaces:
+  - reeftwin-dev
+  - reeftwin-staging
+  - reeftwin-prod
+- NetworkPolicies for each service
+- Pod Security Standards: restricted
+- non-root containers
+- read-only root filesystem where possible
+- drop all Linux capabilities
+- resource requests and limits
+- liveness and readiness probes
+- no privileged containers
+- no hostPath volumes
+- service accounts per workload
+- least-privilege RBAC
+- secrets mounted from external secret references
+
+Create:
+- infra/k8s/base/
+- infra/k8s/overlays/dev/
+- infra/k8s/overlays/prod/
+- infra/k8s/network-policies/
+- docs/security/kubernetes_security.md
+
+
+============================================================================================
+10. Container image security
+
+Harden all ReefTwin container images.
+
+Requirements:
+- use slim or distroless base images where practical
+- run as non-root user
+- pin base image versions
+- add HEALTHCHECK where appropriate
+- remove build tools from runtime image
+- use multi-stage builds
+- generate SBOM for each image
+- scan images with Trivy in CI
+- fail CI on critical vulnerabilities unless explicitly waived
+
+Files:
+- Dockerfile for each service
+- .github/workflows/container-security.yml
+- docs/security/container_security.md
+
+Add a vulnerability waiver process:
+- docs/security/vulnerability_waivers.md
+
+============================================================================================
+11. CI/CD supply-chain security
+
+Create a secure CI/CD pipeline for ReefTwin.
+
+Pipeline stages:
+1. lint
+2. unit tests
+3. type checks
+4. dependency vulnerability scan
+5. secret scan
+6. SAST scan
+7. container build
+8. container scan
+9. SBOM generation
+10. image signing
+11. Kubernetes manifest validation
+
+Use:
+- ruff
+- pytest
+- mypy
+- pip-audit or uv audit equivalent
+- gitleaks
+- semgrep
+- trivy
+- syft
+- cosign
+
+Create:
+- .github/workflows/security-ci.yml
+- .github/workflows/release.yml
+- docs/security/supply_chain_security.md
+
+Ensure CI fails on:
+- detected secrets
+- critical dependency vulnerabilities
+- unsigned images for production
+- Kubernetes manifests with privileged pods
+
+============================================================================================
+12. Observability and security monitoring
+
+Add security observability to ReefTwin.
+
+Create Prometheus metrics:
+- auth_failed_total
+- authz_denied_total
+- api_rate_limited_total
+- ingestion_blocked_url_total
+- data_quarantine_total
+- model_prediction_drift_total
+- privileged_action_total
+- secret_scan_failure_total
+- pipeline_security_failure_total
+
+Add structured JSON logging with:
+- request_id
+- user_id hash
+- role
+- endpoint
+- action
+- reef_id
+- decision
+- timestamp
+
+Create Grafana dashboard JSON:
+- security overview
+- API abuse
+- ingestion blocked attempts
+- privileged actions
+- model drift/security events
+
+Files:
+- services/common/logging.py
+- services/common/metrics.py
+- infra/grafana/dashboards/security_dashboard.json
+- docs/security/security_monitoring.md
+
+
+============================================================================================
+13. Backup and recovery controls
+
+Implement backup and recovery documentation and scripts for ReefTwin.
+
+Scope:
+- PostgreSQL/TimescaleDB reef state
+- model registry artifacts
+- object storage datasets
+- configuration files
+- audit logs
+
+Create:
+- scripts/backup_db.sh
+- scripts/restore_db.sh
+- scripts/backup_artifacts.sh
+- docs/security/backup_recovery.md
+- docs/security/disaster_recovery_runbook.md
+
+Requirements:
+- encrypted backups
+- retention policy
+- restore test checklist
+- RPO/RTO targets
+- backup failure alerting
+
+
+============================================================================================
+14. ML governance and model risk controls
+
+Add ML governance controls to ReefTwin.
+
+Implement:
+- model cards for bleaching risk model
+- dataset cards for training datasets
+- model versioning metadata
+- training data lineage
+- model approval workflow
+- drift monitoring hooks
+- prediction explainability report
+- model rollback procedure
+
+Create:
+- docs/ml_governance/model_card_bleaching_risk.md
+- docs/ml_governance/dataset_card_noaa_crw.md
+- docs/ml_governance/model_risk_register.md
+- services/model_registry/
+- tests/ml_governance/test_model_metadata.py
+
+The model card must include:
+- intended use
+- out-of-scope use
+- limitations
+- training data sources
+- evaluation metrics
+- known failure modes
+- monitoring plan
+- human review points
+
+============================================================================================
+15. Secure model serving
+
+Harden ReefTwin model inference services.
+
+Requirements:
+- authenticated inference endpoints
+- schema validation for model inputs
+- input bounds checking
+- model artifact checksum validation
+- signed model artifact verification
+- no dynamic code loading from user input
+- timeout for prediction calls
+- batch size limits
+- inference audit logs
+
+Add tests:
+- invalid model input rejected
+- oversized batch rejected
+- tampered model artifact rejected
+- unauthenticated inference blocked
+
+Files:
+- services/model_serving/security.py
+- services/model_serving/main.py
+- tests/security/test_model_serving_security.py
+- docs/security/model_serving_security.md
+
+============================================================================================
+16. Public data redaction
+
+Implement public API data redaction for ReefTwin.
+
+Requirements:
+- public users must never receive:
+  - precise sensitive reef coordinates
+  - restricted raw sensor identifiers
+  - internal research annotations
+  - private dataset provenance details
+  - user/operator identifiers
+- public API should return generalized location and safe summaries only
+
+Create:
+- services/common/redaction.py
+- configs/redaction_policy.yml
+- tests/security/test_public_redaction.py
+- docs/security/public_data_policy.md
+
+============================================================================================
+17. Policy-as-code for Kubernetes
+
+Add policy-as-code validation for ReefTwin Kubernetes manifests.
+
+Use either Conftest/OPA or Kyverno policies.
+
+Policies must reject:
+- privileged containers
+- containers running as root
+- missing resource limits
+- hostNetwork true
+- hostPath volumes
+- latest image tag
+- missing readiness/liveness probes
+- missing NetworkPolicy for namespace
+- containers without readOnlyRootFilesystem where applicable
+
+Create:
+- infra/policies/
+- tests/policy/
+- .github/workflows/policy-check.yml
+- docs/security/policy_as_code.md
+
+============================================================================================
+18. Enterprise security README section
+
+Update the root README.md with a professional “Security Architecture” section.
+
+Include:
+- security posture summary
+- standards alignment:
+  - ASD Essential Eight
+  - ASD ISM principles
+  - OWASP API Security Top 10
+  - CIS Kubernetes Benchmark
+  - NIST AI RMF
+- security controls implemented
+- what is intentionally out of scope
+- production hardening checklist
+- compliance disclaimer
+
+Do not claim certification or full compliance.
+Use the phrase:
+“ReefTwin is designed to be security-aligned with enterprise and Australian public-sector security practices.”
+
+
+============================================================================================
+Best execution order
+Do them in this order:
+
+1. Threat model
+2. Auth + RBAC
+3. API validation + rate limits
+4. Secrets management
+5. Data classification
+6. Secure ingestion
+7. Audit logging
+8. Container security
+9. CI/CD security
+10. Kubernetes hardening
+11. ML governance
+12. Security monitoring
+13. Backup/recovery
+14. README security architecture
+
+
+The important part: don’t just add security features—add tests and evidence. That is what makes it enterprise-grade.
+
+============================================================================================
+
+============================================================================================
+
+============================================================================================
+
+============================================================================================
+
+============================================================================================
+
+============================================================================================
+
+============================================================================================
+
+============================================================================================

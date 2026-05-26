@@ -1,0 +1,12 @@
+# Training image — heavier dependencies (torch, scikit-learn, mlflow)
+FROM python:3.12-slim
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+WORKDIR /app
+
+COPY pyproject.toml README.md ./
+RUN uv venv && uv pip install -e ".[mlops]" && \
+    uv pip install torch --index-url https://download.pytorch.org/whl/cpu
+
+COPY . .
+
+CMD ["python", "-m", "models.bleaching_risk.train"]

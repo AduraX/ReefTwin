@@ -1,0 +1,16 @@
+reefs:
+  - reef_id: gbr_heron_reef
+    name: Heron Reef
+    region: Great Barrier Reef
+    latitude: -23.442
+    longitude: 151.914
+  - reef_id: gbr_lizard_island
+    name: Lizard Island Reef
+    region: Great Barrier Reef
+    latitude: -14.668
+    longitude: 145.459
+  - reef_id: coral_sea_reef
+    name: Coral Sea Reef
+    region: Coral Sea
+    latitude: -18.0
+    longitude: 152.0

@@ -1,0 +1,50 @@
+# Production Docker Compose — with Redpanda SASL auth and no Console UI
+services:
+  reeftwin-api:
+    build: .
+    command: uvicorn services.twin_api.main:app --host 0.0.0.0 --port 8000
+    ports:
+      - "8000:8000"
+    environment:
+      - REEFTWIN_STATE_PATH=/app/data/gold/reef_state.json
+      - REEFTWIN_STREAM_BACKEND=kafka
+      - KAFKA_BOOTSTRAP_SERVERS=redpanda:9092
+      - REEFTWIN_API_KEYS=${REEFTWIN_API_KEYS}
+    depends_on:
+      - redpanda
+
+  redpanda:
+    image: docker.redpanda.com/redpandadata/redpanda:latest
+    command:
+      - redpanda start
+      - --smp 1
+      - --memory 512M
+      - --overprovisioned
+      - --kafka-addr internal://0.0.0.0:9092
+      - --advertise-kafka-addr internal://redpanda:9092
+      # SASL/SCRAM authentication
+      - --set redpanda.superusers=["admin"]
+      - --set redpanda.enable_sasl=true
+    volumes:
+      - redpanda-data:/var/lib/redpanda/data
+    # No external ports exposed — internal only
+
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./infra/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./infra/grafana/provisioning:/etc/grafana/provisioning
+    environment:
+      - GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH=/etc/grafana/provisioning/dashboards/json/reeftwin-overview.json
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-changeme}
+
+volumes:
+  redpanda-data:
