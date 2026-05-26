@@ -31,4 +31,4 @@ pipelines/kfp/*.yaml
 ReefTwin_Security_Standards.txt
 ReefTwin.txt
 SomeNotes.sh
-*.log
+*/articles/
